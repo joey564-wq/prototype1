@@ -1,0 +1,341 @@
+openapi: "3.1.0"
+info:
+  title: Campus Exchange API
+  version: "0.1.0"
+  description: REST API for the Campus Exchange marketplace.
+servers:
+  - url: http://localhost:3000
+    description: Local dev
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /api/auth/register:
+    post:
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: User created
+        "400":
+          description: Validation error
+
+  /api/auth/login:
+    post:
+      summary: Sign in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: JWT access token returned
+
+  /api/listings:
+    get:
+      summary: Browse listings
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+        - in: query
+          name: category
+          schema:
+            type: string
+        - in: query
+          name: min_price
+          schema:
+            type: number
+        - in: query
+          name: max_price
+          schema:
+            type: number
+        - in: query
+          name: condition
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Array of listings
+    post:
+      summary: Create a listing
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ListingRequest"
+      responses:
+        "201":
+          description: Created listing
+
+  /api/listings/{id}:
+    get:
+      summary: Get listing by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Listing object
+        "404":
+          description: Not found
+    patch:
+      summary: Update a listing
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ListingRequest"
+      responses:
+        "200":
+          description: Updated listing
+    delete:
+      summary: Delete a listing
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /api/messages:
+    get:
+      summary: List conversations for current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Array of conversations
+    post:
+      summary: Send a message / start conversation
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageRequest"
+      responses:
+        "201":
+          description: Message sent
+
+  /api/messages/{conversationId}:
+    get:
+      summary: Get messages in a conversation
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Array of messages
+
+  /api/offers:
+    post:
+      summary: Make an offer on a listing
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OfferRequest"
+      responses:
+        "201":
+          description: Offer created
+
+  /api/offers/{id}:
+    patch:
+      summary: Accept or decline an offer
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [accepted, declined, withdrawn]
+      responses:
+        "200":
+          description: Updated offer
+
+  /api/users/{id}:
+    get:
+      summary: Get public profile
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Profile object
+
+  /api/users/{id}/ratings:
+    get:
+      summary: List ratings for a user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Array of ratings
+    post:
+      summary: Submit a rating for a user
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RatingRequest"
+      responses:
+        "201":
+          description: Rating created
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [email, password, username]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        username:
+          type: string
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    ListingRequest:
+      type: object
+      required: [title, price, condition]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        condition:
+          type: string
+          enum: [new, like_new, good, fair, poor]
+        category_id:
+          type: integer
+        images:
+          type: array
+          items:
+            type: string
+
+    MessageRequest:
+      type: object
+      required: [listing_id, body]
+      properties:
+        listing_id:
+          type: string
+        conversation_id:
+          type: string
+        body:
+          type: string
+
+    OfferRequest:
+      type: object
+      required: [listing_id, amount]
+      properties:
+        listing_id:
+          type: string
+        amount:
+          type: number
+
+    RatingRequest:
+      type: object
+      required: [score]
+      properties:
+        listing_id:
+          type: string
+        score:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
