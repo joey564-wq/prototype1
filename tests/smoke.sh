@@ -49,8 +49,20 @@ echo "Base URL: $BASE_URL"
 echo "=========================================="
 echo ""
 
-# Test 1: Health Check
-run_test "Health Check" "/health" "GET"
+# Test 1: Health Check (endpoint is at root, not /api)
+echo -n "Testing Health Check... "
+response=$(curl -s -w "\n%{http_code}" "http://localhost:3000/health" 2>&1)
+http_code=$(echo "$response" | tail -n1)
+body=$(echo "$response" | sed '$d')
+
+if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+  echo -e "${GREEN}PASSED${NC} (HTTP $http_code)"
+  ((PASSED++))
+else
+  echo -e "${RED}FAILED${NC} (HTTP $http_code)"
+  echo "Response: $body"
+  ((FAILED++))
+fi
 
 # Test 2: Get All Listings
 run_test "Get All Listings" "/listings" "GET"
