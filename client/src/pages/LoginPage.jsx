@@ -1,6 +1,8 @@
 import Navbar from '../components/Navbar.jsx';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
+import Button from '../components/Button.jsx';
+import Input from '../components/Input.jsx';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -25,40 +27,51 @@ export default function LoginPage() {
   };
 
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <main className="max-w-md mx-auto p-6">
-        <h1 className="text-2xl font-bold mb-4">Sign In</h1>
-        
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <div>
-            <label className="block font-medium mb-1">Email</label>
-            <input
+      <main className="max-w-md mx-auto px-4 py-12">
+        <div className="bg-white rounded-xl shadow-md p-8">
+          <div className="text-center mb-8">
+            <h1 className="text-2xl font-bold text-gray-900">Welcome Back</h1>
+            <p className="text-gray-500 mt-2">Sign in to your Campus Exchange account</p>
+          </div>
+          
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <Input
+              label="Email"
               type="email"
-              className={`w-full p-2 border rounded ${errors.email ? 'border-red-500' : ''}`}
               placeholder="your.email@csuchico.edu"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              error={errors.email}
             />
-            {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-          </div>
-          <div>
-            <label className="block font-medium mb-1">Password</label>
-            <input
+            
+            <Input
+              label="Password"
               type="password"
-              className={`w-full p-2 border rounded ${errors.password ? 'border-red-500' : ''}`}
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              error={errors.password}
             />
-            {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
-          </div>
-          <button type="submit" className="w-full bg-brand-600 text-white py-2 px-4 rounded hover:bg-brand-700">Sign In</button>
-        </form>
 
-        <p className="mt-4 text-center text-gray-500">
-          Don't have an account? <Link to="/register" className="text-brand-600 hover:underline">Sign Up</Link>
-        </p>
+            <div className="flex items-center justify-between text-sm">
+              <label className="flex items-center gap-2">
+                <input type="checkbox" className="rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
+                <span className="text-gray-600">Remember me</span>
+              </label>
+              <Link to="#" className="text-brand-600 hover:underline">Forgot password?</Link>
+            </div>
+
+            <Button type="submit" size="lg" className="w-full">Sign In</Button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <p className="text-gray-500">
+              Don't have an account? <Link to="/register" className="text-brand-600 hover:underline font-medium">Sign Up</Link>
+            </p>
+          </div>
+        </div>
       </main>
     </div>
   );

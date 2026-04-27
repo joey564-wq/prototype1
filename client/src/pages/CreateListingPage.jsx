@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { listingsAPI } from '../lib/api.js';
 import { categories as mockCategories } from '../lib/mockData.js';
+import Button from '../components/Button.jsx';
+import Input, { Textarea, Select } from '../components/Input.jsx';
 
 export default function CreateListingPage() {
   const [categories, setCategories] = useState([]);
@@ -15,7 +17,6 @@ export default function CreateListingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  // For now, use mock categories since we don't have a categories endpoint yet
   useEffect(() => {
     setCategories(mockCategories);
   }, []);
@@ -54,7 +55,6 @@ export default function CreateListingPage() {
       const result = await listingsAPI.create(listingData);
       setSuccess(true);
       
-      // Redirect to the new listing after a short delay
       setTimeout(() => {
         window.location.href = `/listings/${result.listing.id}`;
       }, 1500);
@@ -69,12 +69,17 @@ export default function CreateListingPage() {
 
   if (success) {
     return (
-      <div>
+      <div className="min-h-screen bg-gray-50">
         <Navbar />
-        <main className="max-w-2xl mx-auto p-6">
+        <main className="max-w-2xl mx-auto px-4 py-8">
           <div className="text-center py-12">
-            <h1 className="text-2xl font-bold text-green-600 mb-4">Listing Created!</h1>
-            <p className="text-gray-600">Redirecting to your new listing...</p>
+            <div className="w-16 h-16 bg-success-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Listing Created!</h1>
+            <p className="text-gray-500">Redirecting to your new listing...</p>
           </div>
         </main>
       </div>
@@ -82,59 +87,58 @@ export default function CreateListingPage() {
   }
 
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <main className="max-w-2xl mx-auto p-6">
-        <h1 className="text-2xl font-bold mb-4">Create Listing</h1>
+      <main className="max-w-2xl mx-auto px-4 py-8">
+        <div className="mb-6">
+          <Link to="/listings" className="text-brand-600 hover:underline inline-flex items-center gap-1">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Listings
+          </Link>
+        </div>
         
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <div>
-            <label className="block font-medium mb-1">Title</label>
-            <input
-              type="text"
-              className={`w-full p-2 border rounded ${errors.title ? 'border-red-500' : ''}`}
+        <div className="bg-white rounded-xl shadow-md p-6 md:p-8">
+          <h1 className="text-2xl font-bold text-gray-900 mb-6">Create Listing</h1>
+          
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <Input
+              label="Title"
               placeholder="What are you selling?"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              error={errors.title}
             />
-            {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
-          </div>
 
-          <div>
-            <label className="block font-medium mb-1">Category</label>
-            <select
-              className={`w-full p-2 border rounded ${errors.categoryId ? 'border-red-500' : ''}`}
+            <Select
+              label="Category"
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
+              error={errors.categoryId}
             >
               <option value="">Select a category</option>
               {categories.map(cat => (
                 <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
-            </select>
-            {errors.categoryId && <p className="text-red-500 text-sm mt-1">{errors.categoryId}</p>}
-          </div>
+            </Select>
 
-          <div>
-            <label className="block font-medium mb-1">Price ($)</label>
-            <input
+            <Input
+              label="Price ($)"
               type="number"
-              className={`w-full p-2 border rounded ${errors.price ? 'border-red-500' : ''}`}
               placeholder="0.00"
               step="0.01"
               min="0"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
+              error={errors.price}
             />
-            {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
-          </div>
 
-          <div>
-            <label className="block font-medium mb-1">Condition</label>
-            <select
-              className={`w-full p-2 border rounded ${errors.condition ? 'border-red-500' : ''}`}
+            <Select
+              label="Condition"
               value={condition}
               onChange={(e) => setCondition(e.target.value)}
+              error={errors.condition}
             >
               <option value="">Select condition</option>
               <option value="new">New</option>
@@ -142,37 +146,45 @@ export default function CreateListingPage() {
               <option value="good">Good</option>
               <option value="fair">Fair</option>
               <option value="poor">Poor</option>
-            </select>
-            {errors.condition && <p className="text-red-500 text-sm mt-1">{errors.condition}</p>}
-          </div>
+            </Select>
 
-          <div>
-            <label className="block font-medium mb-1">Description</label>
-            <textarea
-              className={`w-full p-2 border rounded h-32 ${errors.description ? 'border-red-500' : ''}`}
+            <Textarea
+              label="Description"
               placeholder="Describe your item..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-            ></textarea>
-            {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
-          </div>
+              error={errors.description}
+              rows={4}
+            />
 
-          <div>
-            <label className="block font-medium mb-1">Photos</label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-500">
-              Click or drag to upload photos (up to 6)
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Photos</label>
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer">
+                <svg className="mx-auto w-12 h-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <p className="text-gray-500 text-sm">Click or drag to upload photos (up to 6)</p>
+              </div>
             </div>
-          </div>
 
-          {errors.submit && <p className="text-red-500 text-center">{errors.submit}</p>}
+            {errors.submit && (
+              <div className="bg-danger-50 border border-danger-200 rounded-lg p-4 text-danger-600 text-center">
+                {errors.submit}
+              </div>
+            )}
 
-          <div className="flex gap-3">
-            <button type="submit" disabled={submitting} className="flex-1 bg-brand-600 text-white py-2 px-4 rounded hover:bg-brand-700 disabled:opacity-50">
-              {submitting ? 'Creating...' : 'Publish Listing'}
-            </button>
-            <Link to="/listings" className="flex-1 border py-2 px-4 rounded text-center hover:bg-gray-50">Cancel</Link>
-          </div>
-        </form>
+            <div className="flex gap-3 pt-4">
+              <button type="submit" disabled={submitting} className="flex-1">
+                <Button size="lg" className="w-full" disabled={submitting}>
+                  {submitting ? 'Creating...' : 'Publish Listing'}
+                </Button>
+              </button>
+              <Link to="/listings" className="flex-1">
+                <Button variant="secondary" size="lg" className="w-full">Cancel</Button>
+              </Link>
+            </div>
+          </form>
+        </div>
       </main>
     </div>
   );

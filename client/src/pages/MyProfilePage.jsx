@@ -2,9 +2,12 @@ import Navbar from '../components/Navbar.jsx';
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { listingsAPI } from '../lib/api.js';
+import Card from '../components/Card.jsx';
+import Button from '../components/Button.jsx';
+import Input, { Textarea } from '../components/Input.jsx';
+import Badge from '../components/Badge.jsx';
 
 export default function MyProfilePage() {
-  // Mock current user ID - in real app this would come from auth
   const currentUserId = 1;
   const [myListings, setMyListings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,51 +29,88 @@ export default function MyProfilePage() {
   }, [currentUserId]);
 
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <main className="max-w-4xl mx-auto p-6">
-        <h1 className="text-2xl font-bold mb-4">My Profile</h1>
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">My Profile</h1>
 
-        <div className="border rounded-lg p-6 mb-6">
-          <h2 className="text-lg font-semibold mb-4">Edit Profile</h2>
-          <form className="space-y-4 max-w-md">
-            <div>
-              <label className="block font-medium mb-1">Full Name</label>
-              <input type="text" className="w-full p-2 border rounded" defaultValue={currentUser.full_name} />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Edit Profile Card */}
+          <Card className="lg:col-span-1">
+            <div className="p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Edit Profile</h2>
+              <form className="space-y-4">
+                <Input
+                  label="Full Name"
+                  defaultValue={currentUser.full_name}
+                />
+                <Input
+                  label="Email"
+                  type="email"
+                  defaultValue={currentUser.email}
+                  disabled
+                  className="bg-gray-50"
+                />
+                <Textarea
+                  label="Bio"
+                  defaultValue={currentUser.bio}
+                  rows={3}
+                />
+                <Button className="w-full">Save Changes</Button>
+              </form>
             </div>
-            <div>
-              <label className="block font-medium mb-1">Email</label>
-              <input type="email" className="w-full p-2 border rounded bg-gray-50" defaultValue={currentUser.email} disabled />
-            </div>
-            <div>
-              <label className="block font-medium mb-1">Bio</label>
-              <textarea className="w-full p-2 border rounded h-20" defaultValue={currentUser.bio}></textarea>
-            </div>
-            <button type="submit" className="bg-brand-600 text-white py-2 px-4 rounded hover:bg-brand-700">Save Changes</button>
-          </form>
-        </div>
+          </Card>
 
-        <h2 className="text-xl font-semibold mb-4">My Listings</h2>
-        {loading ? (
-          <p>Loading...</p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            {myListings.map(listing => (
-              <Link key={listing.id} to={`/listings/${listing.id}`} className="border rounded-lg p-4 hover:shadow-lg transition">
-                <div className="h-32 bg-gray-200 rounded mb-2"></div>
-                <h3 className="font-medium">{listing.title}</h3>
-                <p className="text-brand-600 font-bold">${listing.price?.toFixed(2)}</p>
-                <p className={`text-xs mt-1 ${listing.status === 'sold' ? 'text-red-500' : 'text-green-600'}`}>
-                  {listing.status === 'sold' ? '● Sold' : '● Available'}
-                </p>
-              </Link>
-            ))}
+          {/* My Listings */}
+          <div className="lg:col-span-2">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">My Listings</h2>
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <svg className="animate-spin h-8 w-8 text-brand-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {myListings.map(listing => (
+                  <Link key={listing.id} to={`/listings/${listing.id}`} className="group">
+                    <Card hover className="overflow-hidden">
+                      <div className="h-40 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center group-hover:from-brand-50 group-hover:to-brand-100 transition-all">
+                        <svg className="w-12 h-12 text-gray-400 group-hover:text-brand-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <div className="p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="font-semibold text-gray-900 line-clamp-2 flex-1">{listing.title}</h3>
+                          <Badge 
+                            variant={listing.status === 'sold' ? 'danger' : 'success'} 
+                            size="sm"
+                            className="ml-2 flex-shrink-0"
+                          >
+                            {listing.status === 'sold' ? 'Sold' : 'Available'}
+                          </Badge>
+                        </div>
+                        <p className="text-xl font-bold text-brand-600">${listing.price?.toFixed(2)}</p>
+                      </div>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {/* Account Actions */}
+            <Card className="mt-6 p-4">
+              <h3 className="font-semibold text-gray-900 mb-3">Account Actions</h3>
+              <div className="flex flex-wrap gap-3">
+                <Link to="/" className="w-full sm:w-auto">
+                  <Button variant="secondary" className="w-full sm:w-auto">Sign Out</Button>
+                </Link>
+                <Button variant="danger" className="w-full sm:w-auto">Delete Account</Button>
+              </div>
+            </Card>
           </div>
-        )}
-
-        <div className="flex gap-3">
-          <Link to="/" className="border py-2 px-4 rounded text-center hover:bg-gray-50">Sign Out</Link>
-          <button className="border border-red-500 text-red-500 py-2 px-4 rounded hover:bg-red-50">Delete Account</button>
         </div>
       </main>
     </div>
