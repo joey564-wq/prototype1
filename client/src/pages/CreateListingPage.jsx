@@ -1,5 +1,6 @@
 import Navbar from '../components/Navbar.jsx';
-import { Link, useState } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import { categories } from '../lib/mockData.js';
 
 export default function CreateListingPage() {

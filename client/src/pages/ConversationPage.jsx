@@ -1,5 +1,6 @@
 import Navbar from '../components/Navbar.jsx';
-import { Link, useParams, useState } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
+import { useState } from 'react';
 import { conversations, users, listings, messages } from '../lib/mockData.js';
 
 export default function ConversationPage() {
