@@ -1,10 +1,30 @@
 import Navbar from '../components/Navbar.jsx';
-import { Link } from 'react-router-dom';
-import { listings, categories } from '../lib/mockData.js';
+import { Link, useEffect, useState } from 'react-router-dom';
+import { listingsAPI } from '../lib/api.js';
 
 export default function HomePage() {
-  // Show first 3 listings as "recent"
-  const recentListings = listings.slice(0, 3);
+  const [recentListings, setRecentListings] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        setLoading(true);
+        const data = await listingsAPI.getAll();
+        // Show first 3 listings as "recent"
+        setRecentListings((data.listings || []).slice(0, 3));
+        // Extract unique categories from listings
+        const uniqueCategories = [...new Set(data.listings?.map(l => l.categories?.name).filter(Boolean))];
+        setCategories(uniqueCategories);
+      } catch (err) {
+        console.error('Failed to load data:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
 
   return (
     <div>
@@ -27,21 +47,25 @@ export default function HomePage() {
 
         <h2 className="text-xl font-semibold mb-4">Featured Categories</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {categories.map(cat => (
-            <Link key={cat.id} to="/listings" className="p-4 bg-gray-100 rounded-lg text-center hover:bg-gray-200">{cat.name}</Link>
+          {categories.map((cat, idx) => (
+            <Link key={idx} to="/listings" className="p-4 bg-gray-100 rounded-lg text-center hover:bg-gray-200">{cat}</Link>
           ))}
         </div>
 
         <h2 className="text-xl font-semibold mb-4">Recent Listings</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {recentListings.map(listing => (
-            <Link key={listing.id} to={`/listings/${listing.id}`} className="border rounded-lg p-4 hover:shadow-lg transition">
-              <div className="h-32 bg-gray-200 rounded mb-2"></div>
-              <h3 className="font-medium">{listing.title}</h3>
-              <p className="text-brand-600 font-bold">${listing.price.toFixed(2)}</p>
-            </Link>
-          ))}
-        </div>
+        {loading ? (
+          <p>Loading...</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {recentListings.map(listing => (
+              <Link key={listing.id} to={`/listings/${listing.id}`} className="border rounded-lg p-4 hover:shadow-lg transition">
+                <div className="h-32 bg-gray-200 rounded mb-2"></div>
+                <h3 className="font-medium">{listing.title}</h3>
+                <p className="text-brand-600 font-bold">${listing.price?.toFixed(2)}</p>
+              </Link>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );

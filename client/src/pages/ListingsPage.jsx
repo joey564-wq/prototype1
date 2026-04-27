@@ -1,8 +1,35 @@
 import Navbar from '../components/Navbar.jsx';
-import { Link } from 'react-router-dom';
-import { listings, categories } from '../lib/mockData.js';
+import { Link, useEffect, useState } from 'react-router-dom';
+import { listingsAPI } from '../lib/api.js';
 
 export default function ListingsPage() {
+  const [listings, setListings] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        setLoading(true);
+        const data = await listingsAPI.getAll();
+        setListings(data.listings || []);
+        // Extract unique categories from listings
+        const uniqueCategories = [...new Set(data.listings?.map(l => l.categories?.name).filter(Boolean))];
+        setCategories(uniqueCategories);
+      } catch (err) {
+        setError('Failed to load listings');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  if (loading) return <div className="p-6">Loading...</div>;
+  if (error) return <div className="p-6 text-red-500">{error}</div>;
+
   return (
     <div>
       <Navbar />
@@ -15,8 +42,8 @@ export default function ListingsPage() {
         <div className="mb-6 flex gap-4 flex-wrap">
           <select className="p-2 border rounded">
             <option>All Categories</option>
-            {categories.map(cat => (
-              <option key={cat.id}>{cat.name}</option>
+            {categories.map((cat, idx) => (
+              <option key={idx}>{cat}</option>
             ))}
           </select>
           <select className="p-2 border rounded">
@@ -36,8 +63,8 @@ export default function ListingsPage() {
             <Link key={listing.id} to={`/listings/${listing.id}`} className="border rounded-lg p-4 hover:shadow-lg transition">
               <div className="h-40 bg-gray-200 rounded mb-2"></div>
               <h3 className="font-medium">{listing.title}</h3>
-              <p className="text-sm text-gray-500 capitalize">{categories.find(c => c.id === listing.category_id)?.name}</p>
-              <p className="text-brand-600 font-bold mt-2">${listing.price.toFixed(2)}</p>
+              <p className="text-sm text-gray-500 capitalize">{listing.categories?.name}</p>
+              <p className="text-brand-600 font-bold mt-2">${listing.price?.toFixed(2)}</p>
               <p className={`text-xs mt-1 ${listing.status === 'sold' ? 'text-red-500' : 'text-green-600'}`}>
                 {listing.status === 'sold' ? '● Sold' : '● Available'}
               </p>
