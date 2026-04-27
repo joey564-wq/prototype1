@@ -76,40 +76,6 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// GET /api/users/:userId/listings
-// Returns all listings for a specific user
-router.get('/users/:userId/listings', async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    // Query listings for a specific seller
-    const { data, error } = await supabase
-      .from('listings')
-      .select(`
-        id,
-        title,
-        description,
-        price,
-        status,
-        created_at,
-        category_id,
-        categories:category_id (id, name)
-      `)
-      .eq('seller_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Supabase error:', error);
-      return res.status(500).json({ error: 'Failed to fetch user listings' });
-    }
-
-    res.json({ listings: data });
-  } catch (err) {
-    console.error('Server error:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
 // POST /api/listings
 // Creates a new listing
 // Requires authentication and verified email
