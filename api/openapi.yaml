@@ -1,0 +1,335 @@
+openapi: 3.0.3
+info:
+  title: Campus Exchange API
+  description: API for the Campus Exchange marketplace application
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local development server
+
+tags:
+  - name: listings
+    description: Listing operations
+
+paths:
+  /listings:
+    get:
+      tags:
+        - listings
+      summary: Get all listings
+      description: Returns all listings with seller and category information
+      operationId: getAllListings
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  listings:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Listing'
+              example:
+                listings:
+                  - id: 1
+                    title: Calculus Early Transcendentals
+                    description: Used for MATH 120
+                    price: 45.00
+                    status: available
+                    created_at: '2024-01-15T10:30:00Z'
+                    seller_id: 1
+                    category_id: 1
+                    users:
+                      id: 1
+                      full_name: Jane Doe
+                      email: jane.doe@example.com
+                    categories:
+                      id: 1
+                      name: Textbooks
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags:
+        - listings
+      summary: Create a new listing
+      description: Creates a new listing (requires authentication)
+      operationId: createListing
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateListingRequest'
+            example:
+              title: Graphing Calculator TI-84 Plus
+              description: Used for 2 semesters, in great condition
+              price: 75.00
+              category_id: 1
+              status: available
+      responses:
+        '201':
+          description: Listing created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  listing:
+                    $ref: '#/components/schemas/Listing'
+              example:
+                listing:
+                  id: 7
+                  title: Graphing Calculator TI-84 Plus
+                  description: Used for 2 semesters, in great condition
+                  price: 75.00
+                  status: available
+                  created_at: '2024-01-20T14:00:00Z'
+                  seller_id: 1
+                  category_id: 1
+                  categories:
+                    id: 1
+                    name: Textbooks
+        '400':
+          description: Bad request - invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Missing required fields
+                required: ['title', 'price', 'category_id']
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - email not verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /listings/{id}:
+    get:
+      tags:
+        - listings
+      summary: Get a listing by ID
+      description: Returns a single listing with seller and category information
+      operationId: getListingById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Listing ID
+          example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  listing:
+                    $ref: '#/components/schemas/Listing'
+              example:
+                listing:
+                  id: 1
+                  title: Calculus Early Transcendentals
+                  description: Used for MATH 120
+                  price: 45.00
+                  status: available
+                  created_at: '2024-01-15T10:30:00Z'
+                  seller_id: 1
+                  category_id: 1
+                  users:
+                    id: 1
+                    full_name: Jane Doe
+                    email: jane.doe@example.com
+                  categories:
+                    id: 1
+                    name: Textbooks
+        '404':
+          description: Listing not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Listing not found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/{userId}/listings:
+    get:
+      tags:
+        - listings
+      summary: Get listings for a specific user
+      description: Returns all listings for a given user
+      operationId: getUserListings
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: User ID
+          example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  listings:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Listing'
+              example:
+                listings:
+                  - id: 1
+                    title: Calculus Early Transcendentals
+                    description: Used for MATH 120
+                    price: 45.00
+                    status: available
+                    created_at: '2024-01-15T10:30:00Z'
+                    seller_id: 1
+                    category_id: 1
+                    categories:
+                      id: 1
+                      name: Textbooks
+                  - id: 2
+                    title: Apple AirPods Pro
+                    description: Like new, comes with case
+                    price: 180.00
+                    status: available
+                    created_at: '2024-01-16T11:00:00Z'
+                    seller_id: 1
+                    category_id: 2
+                    categories:
+                      id: 2
+                      name: Electronics
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Listing:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Listing ID
+        title:
+          type: string
+          description: Listing title
+        description:
+          type: string
+          nullable: true
+          description: Listing description
+        price:
+          type: number
+          format: float
+          description: Listing price
+        status:
+          type: string
+          enum: [available, pending, sold]
+          description: Listing status
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        seller_id:
+          type: integer
+          description: Seller user ID
+        category_id:
+          type: integer
+          description: Category ID
+        users:
+          type: object
+          description: Seller information
+          properties:
+            id:
+              type: integer
+            full_name:
+              type: string
+            email:
+              type: string
+        categories:
+          type: object
+          description: Category information
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+
+    CreateListingRequest:
+      type: object
+      required:
+        - title
+        - price
+        - category_id
+      properties:
+        title:
+          type: string
+          description: Listing title
+        description:
+          type: string
+          description: Listing description
+        price:
+          type: number
+          format: float
+          minimum: 0
+          description: Listing price (must be positive)
+        category_id:
+          type: integer
+          description: Category ID
+        status:
+          type: string
+          enum: [available, pending, sold]
+          default: available
+          description: Listing status
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
