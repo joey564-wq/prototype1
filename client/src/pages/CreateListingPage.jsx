@@ -1,15 +1,23 @@
 import Navbar from '../components/Navbar.jsx';
-import { Link } from 'react-router-dom';
-import { useState } from 'react';
-import { categories } from '../lib/mockData.js';
+import { Link, useEffect, useState } from 'react-router-dom';
+import { listingsAPI } from '../lib/api.js';
+import { categories as mockCategories } from '../lib/mockData.js';
 
 export default function CreateListingPage() {
+  const [categories, setCategories] = useState([]);
   const [title, setTitle] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [price, setPrice] = useState('');
   const [condition, setCondition] = useState('');
   const [description, setDescription] = useState('');
   const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  // For now, use mock categories since we don't have a categories endpoint yet
+  useEffect(() => {
+    setCategories(mockCategories);
+  }, []);
 
   const validate = () => {
     const newErrors = {};
@@ -26,12 +34,51 @@ export default function CreateListingPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validate()) {
-      console.log('Create listing submitted:', { title, categoryId, price, condition, description });
+    if (!validate()) return;
+
+    try {
+      setSubmitting(true);
+      setErrors({});
+      
+      const listingData = {
+        title,
+        category_id: parseInt(categoryId),
+        price: parseFloat(price),
+        status: 'available',
+        description
+      };
+
+      const result = await listingsAPI.create(listingData);
+      setSuccess(true);
+      
+      // Redirect to the new listing after a short delay
+      setTimeout(() => {
+        window.location.href = `/listings/${result.listing.id}`;
+      }, 1500);
+      
+    } catch (err) {
+      setErrors({ submit: err.message || 'Failed to create listing' });
+      console.error('Create listing error:', err);
+    } finally {
+      setSubmitting(false);
     }
   };
+
+  if (success) {
+    return (
+      <div>
+        <Navbar />
+        <main className="max-w-2xl mx-auto p-6">
+          <div className="text-center py-12">
+            <h1 className="text-2xl font-bold text-green-600 mb-4">Listing Created!</h1>
+            <p className="text-gray-600">Redirecting to your new listing...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -116,8 +163,12 @@ export default function CreateListingPage() {
             </div>
           </div>
 
+          {errors.submit && <p className="text-red-500 text-center">{errors.submit}</p>}
+
           <div className="flex gap-3">
-            <button type="submit" className="flex-1 bg-brand-600 text-white py-2 px-4 rounded hover:bg-brand-700">Publish Listing</button>
+            <button type="submit" disabled={submitting} className="flex-1 bg-brand-600 text-white py-2 px-4 rounded hover:bg-brand-700 disabled:opacity-50">
+              {submitting ? 'Creating...' : 'Publish Listing'}
+            </button>
             <Link to="/listings" className="flex-1 border py-2 px-4 rounded text-center hover:bg-gray-50">Cancel</Link>
           </div>
         </form>
