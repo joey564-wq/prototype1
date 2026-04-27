@@ -1,4 +1,4 @@
-# Dependencies
+git push -u origin main# Dependencies
 node_modules/
 
 # Environment variables
@@ -40,3 +40,4 @@ coverage/
 # Misc
 .cache/
 tmp/
+.env
