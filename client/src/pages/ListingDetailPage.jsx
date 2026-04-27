@@ -24,7 +24,7 @@ export default function ListingDetailPage() {
             </div>
 
             <div className="flex gap-3">
-              <button className="flex-1 bg-brand-600 text-white py-2 px-4 rounded hover:bg-brand-700">Message Seller</button>
+              <Link to="/messages/1" className="flex-1 bg-brand-600 text-white py-2 px-4 rounded hover:bg-brand-700 text-center">Message Seller</Link>
               <button className="flex-1 border border-brand-600 text-brand-600 py-2 px-4 rounded hover:bg-brand-50">Make Offer</button>
               <button className="py-2 px-4 rounded border hover:bg-gray-50">♥ Favorite</button>
             </div>

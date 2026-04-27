@@ -30,14 +30,14 @@ export default function ProfilePage() {
         <div className="space-y-3">
           <div className="border rounded-lg p-4">
             <div className="flex justify-between">
-              <p className="font-medium">John Smith</p>
+              <Link to="/profile/2" className="font-medium text-brand-600 hover:underline">John Smith</Link>
               <p className="text-yellow-500">★★★★★</p>
             </div>
             <p className="text-sm text-gray-600 mt-1">Great seller! Item was exactly as described.</p>
           </div>
           <div className="border rounded-lg p-4">
             <div className="flex justify-between">
-              <p className="font-medium">Bob Wilson</p>
+              <Link to="/profile/3" className="font-medium text-brand-600 hover:underline">Bob Wilson</Link>
               <p className="text-yellow-500">★★★★☆</p>
             </div>
             <p className="text-sm text-gray-600 mt-1">Smooth transaction, would buy again.</p>

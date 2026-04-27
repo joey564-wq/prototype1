@@ -6,7 +6,10 @@ export default function ListingsPage() {
     <div>
       <Navbar />
       <main className="max-w-4xl mx-auto p-6">
-        <h1 className="text-2xl font-bold mb-4">Browse Listings</h1>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold">Browse Listings</h1>
+          <Link to="/listings/new" className="bg-brand-600 text-white py-2 px-4 rounded hover:bg-brand-700">+ Create Listing</Link>
+        </div>
 
         <div className="mb-6 flex gap-4 flex-wrap">
           <select className="p-2 border rounded">

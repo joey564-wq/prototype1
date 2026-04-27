@@ -38,7 +38,7 @@ export default function MyProfilePage() {
         </div>
 
         <div className="flex gap-3">
-          <button className="border py-2 px-4 rounded hover:bg-gray-50">Sign Out</button>
+          <Link to="/" className="border py-2 px-4 rounded hover:bg-gray-50 text-center">Sign Out</Link>
           <button className="border border-red-500 text-red-500 py-2 px-4 rounded hover:bg-red-50">Delete Account</button>
         </div>
       </main>
