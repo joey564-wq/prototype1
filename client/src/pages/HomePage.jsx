@@ -1,5 +1,6 @@
 import Navbar from '../components/Navbar.jsx';
-import { Link, useEffect, useState } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { listingsAPI } from '../lib/api.js';
 
 export default function HomePage() {
