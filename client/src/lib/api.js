@@ -20,6 +20,25 @@ function enrichMockListings(listings) {
 }
 
 // Listings API - uses Supabase when configured, falls back to mock data
+// Messages API
+export const messagesAPI = {
+  sendMessage: async (senderId, recipientId, listingId, messageText) => {
+    if (!isSupabaseConfigured) {
+      console.log('Mock send message:', { senderId, recipientId, listingId, messageText });
+      return { id: Date.now(), sender_id: senderId, recipient_id: recipientId, listing_id: listingId, message_text: messageText, created_at: new Date().toISOString() };
+    }
+
+    const { data, error } = await supabase
+      .from('messages')
+      .insert([{ sender_id: senderId, recipient_id: recipientId, listing_id: listingId, message_text: messageText }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+};
+
 export const listingsAPI = {
   getAll: async () => {
     if (!isSupabaseConfigured) {
@@ -32,8 +51,8 @@ export const listingsAPI = {
       .from('listings')
       .select(`
         *,
-        users!listings_seller_id_fkey (full_name, major, graduation_year, avg_rating),
-        categories (name)
+        users!listings_seller_id_fkey (*),
+        categories (*)
       `)
       .eq('status', 'available')
       .order('created_at', { ascending: false });
@@ -55,8 +74,8 @@ export const listingsAPI = {
       .from('listings')
       .select(`
         *,
-        users!listings_seller_id_fkey (full_name, major, graduation_year, avg_rating),
-        categories (name)
+        users!listings_seller_id_fkey (*),
+        categories (*)
       `)
       .eq('id', id)
       .single();
@@ -77,7 +96,7 @@ export const listingsAPI = {
       .from('listings')
       .select(`
         *,
-        categories (name)
+        categories (*)
       `)
       .eq('seller_id', userId)
       .order('created_at', { ascending: false });

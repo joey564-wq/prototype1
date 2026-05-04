@@ -1,18 +1,30 @@
 import { useEffect, useState } from 'react';
-import { listingsAPI } from '../lib/api.js';
+import { useNavigate } from 'react-router-dom';
+import { listingsAPI, messagesAPI } from '../lib/api.js';
+import { useAuth } from '../contexts/AuthContext.jsx';
 import Button from './Button.jsx';
 import Badge from './Badge.jsx';
 import Card from './Card.jsx';
 import Modal from './Modal.jsx';
 
 export default function ListingDetailModal({ isOpen, onClose, listingId }) {
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showOfferInput, setShowOfferInput] = useState(false);
+  const [offerAmount, setOfferAmount] = useState('');
+  const [offerError, setOfferError] = useState('');
+  const [offerSuccess, setOfferSuccess] = useState('');
 
   useEffect(() => {
     if (!isOpen || !listingId) return;
-    
+    setShowOfferInput(false);
+    setOfferAmount('');
+    setOfferError('');
+    setOfferSuccess('');
+
     async function loadListing() {
       try {
         setLoading(true);
@@ -32,6 +44,12 @@ export default function ListingDetailModal({ isOpen, onClose, listingId }) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={listing?.title || 'Loading...'}>
+      {/* Inline auth prompt overlay */}
+      {!isAuthenticated && (
+        <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+          <span className="font-medium">Sign in</span> to message the seller or make an offer.
+        </div>
+      )}
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <svg className="animate-spin h-8 w-8 text-brand-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -85,8 +103,53 @@ export default function ListingDetailModal({ isOpen, onClose, listingId }) {
 
             {/* Actions */}
             <div className="flex flex-col gap-3">
-              <Button size="lg" className="w-full">Message Seller</Button>
-              <Button variant="secondary" size="lg" className="w-full">Make Offer</Button>
+              <Button size="lg" className="w-full" onClick={() => {
+                if (!isAuthenticated) { navigate('/login'); onClose(); return; }
+                navigate('/messages'); onClose();
+              }}>Message Seller</Button>
+
+              {!showOfferInput ? (
+                <Button variant="secondary" size="lg" className="w-full" onClick={() => {
+                  if (!isAuthenticated) { navigate('/login'); onClose(); return; }
+                  setShowOfferInput(true);
+                  setOfferSuccess('');
+                  setOfferError('');
+                }}>Make Offer</Button>
+              ) : (
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!offerAmount) { setOfferError('Please enter an offer amount'); return; }
+                  const amount = parseFloat(offerAmount);
+                  if (isNaN(amount) || amount <= 0) { setOfferError('Offer must be a positive number'); return; }
+                  try {
+                    const messageText = `Hi, I'd like to offer $${amount.toFixed(2)} for ${listing.title}`;
+                    await messagesAPI.sendMessage(user.id, listing.seller_id, listing.id, messageText);
+                    setOfferSuccess('Offer sent successfully!');
+                    setOfferAmount('');
+                    setOfferError('');
+                    setTimeout(() => setShowOfferInput(false), 2000);
+                  } catch (err) {
+                    setOfferError('Failed to send offer. Please try again.');
+                    console.error(err);
+                  }
+                }} className="flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="Your offer amount"
+                      value={offerAmount}
+                      onChange={(e) => { setOfferAmount(e.target.value); setOfferError(''); }}
+                      className={`flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 ${offerError ? 'border-red-500' : 'border-gray-300'}`}
+                    />
+                    <Button type="submit" variant="secondary">Send</Button>
+                  </div>
+                  {offerError && <p className="text-sm text-red-600">{offerError}</p>}
+                  {offerSuccess && <p className="text-sm text-green-600">{offerSuccess}</p>}
+                </form>
+              )}
+
               <Button variant="ghost" size="lg" className="w-full">
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />

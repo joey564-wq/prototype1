@@ -1,23 +1,30 @@
 import Navigation from '../components/Navigation.jsx';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { listingsAPI } from '../lib/api.js';
+import { listingsAPI, messagesAPI } from '../lib/api.js';
+import { useAuth } from '../contexts/AuthContext.jsx';
 import Button from '../components/Button.jsx';
 import Badge from '../components/Badge.jsx';
 import Card from '../components/Card.jsx';
 
 export default function ListingDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showOfferInput, setShowOfferInput] = useState(false);
+  const [offerAmount, setOfferAmount] = useState('');
+  const [offerError, setOfferError] = useState('');
+  const [offerSuccess, setOfferSuccess] = useState('');
 
   useEffect(() => {
     async function loadListing() {
       try {
         setLoading(true);
         const data = await listingsAPI.getById(id);
-        setListing(data.listing);
+        setListing(data);
       } catch (err) {
         setError('Listing not found');
         console.error(err);
@@ -41,6 +48,47 @@ export default function ListingDetailPage() {
       </main>
     </div>
   );
+
+  const handleMessageSeller = () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    navigate('/messages');
+  };
+
+  const handleMakeOffer = () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    setShowOfferInput(true);
+    setOfferSuccess('');
+    setOfferError('');
+  };
+
+  const handleSendOffer = async (e) => {
+    e.preventDefault();
+    if (!offerAmount) {
+      setOfferError('Please enter an offer amount');
+      return;
+    }
+    const amount = parseFloat(offerAmount);
+    if (isNaN(amount) || amount <= 0) {
+      setOfferError('Offer must be a positive number');
+      return;
+    }
+    try {
+      const messageText = `Hi, I'd like to offer $${amount.toFixed(2)} for ${listing.title}`;
+      await messagesAPI.sendMessage(user.id, listing.seller_id, listing.id, messageText);
+      setOfferSuccess('Offer sent successfully!');
+      setOfferAmount('');
+      setShowOfferInput(false);
+    } catch (err) {
+      setOfferError('Failed to send offer. Please try again.');
+      console.error(err);
+    }
+  };
 
   if (error || !listing) return (
     <div className="min-h-screen bg-gray-50">
@@ -108,10 +156,27 @@ export default function ListingDetailPage() {
 
             {/* Actions */}
             <div className="flex flex-col gap-3">
-              <Link to="/messages/1" className="w-full">
-                <Button size="lg" className="w-full">Message Seller</Button>
-              </Link>
-              <Button variant="secondary" size="lg" className="w-full">Make Offer</Button>
+              <Button size="lg" className="w-full" onClick={handleMessageSeller}>Message Seller</Button>
+              {!showOfferInput ? (
+                <Button variant="secondary" size="lg" className="w-full" onClick={handleMakeOffer}>Make Offer</Button>
+              ) : (
+                <form onSubmit={handleSendOffer} className="flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="Your offer amount"
+                      value={offerAmount}
+                      onChange={(e) => { setOfferAmount(e.target.value); setOfferError(''); }}
+                      className={`flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 ${offerError ? 'border-red-500' : 'border-gray-300'}`}
+                    />
+                    <Button type="submit" variant="secondary">Send Offer</Button>
+                  </div>
+                  {offerError && <p className="text-sm text-red-600">{offerError}</p>}
+                  {offerSuccess && <p className="text-sm text-green-600">{offerSuccess}</p>}
+                </form>
+              )}
               <Button variant="ghost" size="lg" className="w-full">
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
