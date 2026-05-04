@@ -17,6 +17,28 @@
 
 ---
 
+## 🌐 API Endpoints
+
+**Base URL:** `https://8xv4z2ni7h.execute-api.us-west-2.amazonaws.com/dev`
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/listings` | Returns all active listings |
+| GET | `/listings/{id}` | Returns a single listing with seller info |
+| POST | `/listings` | Creates a new listing |
+
+---
+
+## 🎮 Demo Instructions
+
+> **Note:** Create two test accounts in your Supabase Auth dashboard using `@mail.csuchico.edu` emails before testing.
+>
+> **Buyer account:** `buyer@mail.csuchico.edu` / `Test1234!`
+>
+> **Seller account:** `seller@mail.csuchico.edu` / `Test1234!`
+
+---
+
 ## ✨ Features
 
 - 🔐 **Verified Student Community** – Only Chico State email addresses allowed
@@ -99,15 +121,24 @@ cd client && npm install && cd ..
 cd api    && npm install && cd ..
 ```
 
-### Configuration
+### Local Development
 
 ```bash
-# Copy environment files
-cp client/.env.example client/.env
-cp api/.env.example    api/.env
+# 1. Clone the repo
+git clone https://github.com/joey564-wq/prototype1.git
+cd prototype1
 
-# Fill in your Supabase credentials in both files
-# Required: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY
+# 2. Install frontend dependencies
+cd client && npm install
+
+# 3. Create a .env file in the client folder with your Supabase credentials
+cat > .env << 'EOF'
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+EOF
+
+# 4. Start the dev server
+npm run dev
 ```
 
 ### Database Setup
@@ -118,7 +149,7 @@ Run the SQL migrations in the Supabase SQL editor:
 2. [`db/02_seed.sql`](db/02_seed.sql) – Load sample data (optional)
 3. [`db/03_policies.sql`](db/03_policies.sql) – Configure row-level security (optional)
 
-### Start Development Servers
+### Start Development Servers (Legacy Local Backend)
 
 ```bash
 # Terminal 1 - Start the API
@@ -128,6 +159,14 @@ cd api && npm run dev
 # Terminal 2 - Start the frontend
 cd client && npm run dev
 # Frontend running at http://localhost:5173
+```
+
+### Start Frontend Only (Uses Lambda API + Supabase)
+
+```bash
+cd client && npm run dev
+# Frontend running at http://localhost:5173
+# Connects directly to Supabase and the deployed Lambda API
 ```
 
 ---
