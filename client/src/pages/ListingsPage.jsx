@@ -87,7 +87,7 @@ export default function ListingsPage() {
             break;
         }
         
-        setListings(filteredList);
+        setListings(filteredListings);
         const uniqueCategories = [...new Set(data.listings?.map(l => l.categories?.name).filter(Boolean))];
         setCategories(uniqueCategories);
       } catch (err) {
