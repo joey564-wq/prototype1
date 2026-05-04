@@ -1,46 +1,81 @@
-// Simple API utility for making fetch calls to the local backend
-const API_BASE = '/api';
+import { supabase } from './supabaseClient.js';
 
-export async function fetchAPI(endpoint, options = {}) {
-  const url = `${API_BASE}${endpoint}`;
-  
-  const defaultOptions = {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  };
-
-  const config = { ...defaultOptions, ...options };
-
-  try {
-    const response = await fetch(url, config);
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('API call failed:', error);
-    throw error;
-  }
-}
-
-// Listings API
+// Listings API - using Supabase directly
 export const listingsAPI = {
-  getAll: () => fetchAPI('/listings'),
-  getById: (id) => fetchAPI(`/listings/${id}`),
-  getByUser: (userId) => fetchAPI(`/users/${userId}/listings`),
-  create: (data) => fetchAPI('/listings', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
-  update: (id, data) => fetchAPI(`/listings/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify(data),
-  }),
-  delete: (id) => fetchAPI(`/listings/${id}`, {
-    method: 'DELETE',
-  }),
+  getAll: async () => {
+    const { data, error } = await supabase
+      .from('listings')
+      .select(`
+        *,
+        users!listings_seller_id_fkey (full_name, major, graduation_year, avg_rating),
+        categories (name)
+      `)
+      .eq('status', 'available')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return { listings: data };
+  },
+  
+  getById: async (id) => {
+    const { data, error } = await supabase
+      .from('listings')
+      .select(`
+        *,
+        users!listings_seller_id_fkey (full_name, major, graduation_year, avg_rating),
+        categories (name)
+      `)
+      .eq('id', id)
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+  
+  getByUser: async (userId) => {
+    const { data, error } = await supabase
+      .from('listings')
+      .select(`
+        *,
+        categories (name)
+      `)
+      .eq('seller_id', userId)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return { listings: data };
+  },
+  
+  create: async (listingData) => {
+    const { data, error } = await supabase
+      .from('listings')
+      .insert([listingData])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+  
+  update: async (id, listingData) => {
+    const { data, error } = await supabase
+      .from('listings')
+      .update(listingData)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+  
+  delete: async (id) => {
+    const { error } = await supabase
+      .from('listings')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+    return { success: true };
+  },
 };

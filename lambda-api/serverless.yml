@@ -1,0 +1,34 @@
+service: campus-exchange-api
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-west-2
+  environment:
+    SUPABASE_URL: your_supabase_url_here
+    SUPABASE_ANON_KEY: your_supabase_anon_key_here
+
+functions:
+  getListings:
+    handler: handlers/listings.getAll
+    events:
+      - http:
+          path: listings
+          method: get
+          cors: true
+
+  getListingById:
+    handler: handlers/listings.getById
+    events:
+      - http:
+          path: listings/{id}
+          method: get
+          cors: true
+
+  createListing:
+    handler: handlers/listings.create
+    events:
+      - http:
+          path: listings
+          method: post
+          cors: true

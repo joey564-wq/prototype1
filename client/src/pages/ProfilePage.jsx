@@ -11,6 +11,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [user, setUser] = useState({ full_name: 'User', email: 'user@example.com' });
+  const [activeTab, setActiveTab] = useState('listings');
 
   useEffect(() => {
     async function loadUserListings() {

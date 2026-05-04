@@ -17,7 +17,7 @@ export default function ListingDetailModal({ isOpen, onClose, listingId }) {
       try {
         setLoading(true);
         const data = await listingsAPI.getById(listingId);
-        setListing(data.listing);
+        setListing(data);
       } catch (err) {
         setError('Listing not found');
         console.error(err);
