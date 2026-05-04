@@ -1,7 +1,7 @@
 import Navigation from '../components/Navigation.jsx';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { listingsAPI, messagesAPI } from '../lib/api.js';
+import { listingsAPI, messagesAPI, favoritesAPI } from '../lib/api.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import Button from '../components/Button.jsx';
 import Badge from '../components/Badge.jsx';
@@ -18,6 +18,7 @@ export default function ListingDetailPage() {
   const [offerAmount, setOfferAmount] = useState('');
   const [offerError, setOfferError] = useState('');
   const [offerSuccess, setOfferSuccess] = useState('');
+  const [isFavorited, setIsFavorited] = useState(false);
 
   useEffect(() => {
     async function loadListing() {
@@ -25,6 +26,14 @@ export default function ListingDetailPage() {
         setLoading(true);
         const data = await listingsAPI.getById(id);
         setListing(data);
+        if (isAuthenticated && user?.id) {
+          try {
+            const favs = await favoritesAPI.getByUser(user.id);
+            setIsFavorited((favs || []).some(f => f.listing_id === parseInt(id)));
+          } catch (e) {
+            console.error('Failed to check favorite', e);
+          }
+        }
       } catch (err) {
         setError('Listing not found');
         console.error(err);
@@ -49,12 +58,22 @@ export default function ListingDetailPage() {
     </div>
   );
 
-  const handleMessageSeller = () => {
+  const handleMessageSeller = async () => {
     if (!isAuthenticated) {
       navigate('/login');
       return;
     }
-    navigate('/messages');
+    try {
+      const result = await messagesAPI.startConversation(
+        user.id,
+        listing.seller_id,
+        listing.id,
+        `Hi, I'm interested in ${listing.title}. Is it still available?`
+      );
+      navigate(`/messages/${result.conversationId}`);
+    } catch (err) {
+      console.error('Failed to start conversation', err);
+    }
   };
 
   const handleMakeOffer = () => {
@@ -156,7 +175,7 @@ export default function ListingDetailPage() {
 
             {/* Actions */}
             <div className="flex flex-col gap-3">
-              <Button size="lg" className="w-full" onClick={handleMessageSeller}>Message Seller</Button>
+              <Button size="lg" className="w-full" onClick={handleMessageSeller} disabled={!listing}>Message Seller</Button>
               {!showOfferInput ? (
                 <Button variant="secondary" size="lg" className="w-full" onClick={handleMakeOffer}>Make Offer</Button>
               ) : (
@@ -177,11 +196,19 @@ export default function ListingDetailPage() {
                   {offerSuccess && <p className="text-sm text-green-600">{offerSuccess}</p>}
                 </form>
               )}
-              <Button variant="ghost" size="lg" className="w-full">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <Button variant="ghost" size="lg" className="w-full" onClick={async () => {
+                if (!isAuthenticated) { navigate('/login'); return; }
+                try {
+                  const result = await favoritesAPI.toggleFavorite(user.id, listing.id);
+                  setIsFavorited(result.favorited);
+                } catch (err) {
+                  console.error('Failed to toggle favorite', err);
+                }
+              }}>
+                <svg className={`w-5 h-5 mr-2 transition-colors ${isFavorited ? 'text-red-500' : 'text-gray-400'}`} fill={isFavorited ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
-                Add to Favorites
+                {isFavorited ? 'Remove from Favorites' : 'Add to Favorites'}
               </Button>
             </div>
           </div>

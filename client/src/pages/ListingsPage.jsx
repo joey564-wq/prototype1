@@ -1,7 +1,8 @@
 import Navigation from '../components/Navigation.jsx';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { listingsAPI } from '../lib/api.js';
+import { listingsAPI, favoritesAPI } from '../lib/api.js';
+import { useAuth } from '../contexts/AuthContext.jsx';
 import Button from '../components/Button.jsx';
 import Badge from '../components/Badge.jsx';
 import Card from '../components/Card.jsx';
@@ -9,8 +10,11 @@ import { Select } from '../components/Input.jsx';
 import ListingDetailModal from '../components/ListingDetailModal.jsx';
 
 export default function ListingsPage() {
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
   const [listings, setListings] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [favorites, setFavorites] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [selectedListingId, setSelectedListingId] = useState(null);
   const [error, setError] = useState(null);
@@ -90,6 +94,16 @@ export default function ListingsPage() {
         setListings(filteredListings);
         const uniqueCategories = [...new Set(data.listings?.map(l => l.categories?.name).filter(Boolean))];
         setCategories(uniqueCategories);
+
+        // Load user's favorites
+        if (isAuthenticated && user?.id) {
+          try {
+            const favs = await favoritesAPI.getByUser(user.id);
+            setFavorites(new Set((favs || []).map(f => f.listing_id)));
+          } catch (e) {
+            console.error('Failed to load favorites', e);
+          }
+        }
       } catch (err) {
         setError('Failed to load listings');
         console.error(err);
@@ -138,6 +152,28 @@ export default function ListingsPage() {
     setSelectedConditions(prev => 
       prev.includes(cond) ? prev.filter(c => c !== cond) : [...prev, cond]
     );
+  };
+
+  const handleToggleFavorite = async (e, listingId) => {
+    e.stopPropagation();
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    try {
+      const result = await favoritesAPI.toggleFavorite(user.id, listingId);
+      setFavorites(prev => {
+        const next = new Set(prev);
+        if (result.favorited) {
+          next.add(listingId);
+        } else {
+          next.delete(listingId);
+        }
+        return next;
+      });
+    } catch (err) {
+      console.error('Failed to toggle favorite', err);
+    }
   };
 
   if (loading) return (
@@ -292,31 +328,48 @@ export default function ListingsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {listings.map(listing => (
-              <div key={listing.id} onClick={() => setSelectedListingId(listing.id)} className="cursor-pointer">
-                <Card hover className="overflow-hidden">
-                  <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center group-hover:from-brand-50 group-hover:to-brand-100 transition-all relative">
-                    <Badge 
-                      variant={listing.status === 'sold' ? 'danger' : 'success'} 
-                      className="absolute top-3 left-3"
-                    >
-                      {listing.status === 'sold' ? 'Sold' : 'Available'}
-                    </Badge>
-                    <svg className="w-16 h-16 text-gray-400 group-hover:text-brand-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2">{listing.title}</h3>
-                    <p className="text-sm text-gray-500 mb-3">{listing.categories?.name}</p>
-                    <div className="flex items-center justify-between">
-                      <p className="text-xl font-bold text-brand-600">${listing.price?.toFixed(2)}</p>
-                      <p className="text-xs text-gray-400">{listing.users?.full_name}</p>
+            {listings.map(listing => {
+              const isFav = favorites.has(listing.id);
+              return (
+                <div key={listing.id} onClick={() => setSelectedListingId(listing.id)} className="cursor-pointer relative group">
+                  <Card hover className="overflow-hidden">
+                    <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center group-hover:from-brand-50 group-hover:to-brand-100 transition-all relative">
+                      <Badge 
+                        variant={listing.status === 'sold' ? 'danger' : 'success'} 
+                        className="absolute top-3 left-3"
+                      >
+                        {listing.status === 'sold' ? 'Sold' : 'Available'}
+                      </Badge>
+                      <button
+                        onClick={(e) => handleToggleFavorite(e, listing.id)}
+                        className="absolute top-3 right-3 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-red-50 transition-colors z-10"
+                        title={isFav ? 'Remove from favorites' : 'Add to favorites'}
+                      >
+                        <svg
+                          className={`w-5 h-5 transition-colors ${isFav ? 'text-red-500' : 'text-gray-400'}`}
+                          fill={isFav ? 'currentColor' : 'none'}
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                      </button>
+                      <svg className="w-16 h-16 text-gray-400 group-hover:text-brand-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
                     </div>
-                  </div>
-                </Card>
-              </div>
-            ))}
+                    <div className="p-4">
+                      <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2">{listing.title}</h3>
+                      <p className="text-sm text-gray-500 mb-3">{listing.categories?.name}</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xl font-bold text-brand-600">${listing.price?.toFixed(2)}</p>
+                        <p className="text-xs text-gray-400">{listing.users?.full_name}</p>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+              );
+            })}
           </div>
         )}
       </main>

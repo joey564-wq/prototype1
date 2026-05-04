@@ -1,23 +1,52 @@
 import Navigation from '../components/Navigation.jsx';
 import { Link, useParams } from 'react-router-dom';
-import { useState } from 'react';
-import { conversations, users, listings, messages } from '../lib/mockData.js';
+import { useEffect, useState } from 'react';
+import { messagesAPI } from '../lib/api.js';
+import { useAuth } from '../contexts/AuthContext.jsx';
 import Card from '../components/Card.jsx';
 import Button from '../components/Button.jsx';
 import Input from '../components/Input.jsx';
 
 export default function ConversationPage() {
   const { conversationId } = useParams();
-  const conversation = conversations.find(c => c.id === parseInt(conversationId));
-  const listing = listings.find(l => l.id === conversation?.listing_id);
-  const seller = users.find(u => u.id === conversation?.seller_id);
-  const conversationMessages = messages.filter(m => m.conversation_id === parseInt(conversationId));
+  const { user } = useAuth();
+  const [messages, setMessages] = useState([]);
+  const [listing, setListing] = useState(null);
+  const [otherUser, setOtherUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [messageText, setMessageText] = useState('');
   const [messageError, setMessageError] = useState('');
   const [offerAmount, setOfferAmount] = useState('');
   const [offerError, setOfferError] = useState('');
+  const [offerSuccess, setOfferSuccess] = useState('');
 
-  const handleSendMessage = (e) => {
+  useEffect(() => {
+    if (!conversationId || !user?.id) return;
+    async function loadMessages() {
+      try {
+        setLoading(true);
+        const data = await messagesAPI.getMessages(conversationId);
+        setMessages(data || []);
+        // Derive listing and other user from first message
+        if (data && data.length > 0) {
+          const firstMsg = data[0];
+          // Try to get listing info from enriched messages if available
+          // For now, we need to fetch listing separately - let's do basic inference
+          const otherId = firstMsg.sender_id === user.id ? firstMsg.recipient_id : firstMsg.sender_id;
+          setOtherUser({ id: otherId, full_name: 'User ' + otherId });
+        }
+      } catch (err) {
+        setError('Failed to load messages');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadMessages();
+  }, [conversationId, user?.id]);
+
+  const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!messageText.trim()) {
       setMessageError('Message cannot be empty');
@@ -28,11 +57,26 @@ export default function ConversationPage() {
       return;
     }
     setMessageError('');
-    console.log('Message sent:', messageText);
-    setMessageText('');
+
+    // Derive recipient from conversationId format: conv-listingId-userA-userB
+    const parts = conversationId.split('-');
+    if (parts.length === 4 && parts[0] === 'conv' && user?.id) {
+      const userA = parseInt(parts[2]);
+      const userB = parseInt(parts[3]);
+      const listingId = parseInt(parts[1]);
+      const recipientId = userA === user.id ? userB : userA;
+      try {
+        const newMsg = await messagesAPI.sendMessage(user.id, recipientId, listingId, messageText.trim());
+        setMessages(prev => [...prev, newMsg]);
+        setMessageText('');
+      } catch (err) {
+        setMessageError('Failed to send message');
+        console.error(err);
+      }
+    }
   };
 
-  const handleSendOffer = (e) => {
+  const handleSendOffer = async (e) => {
     e.preventDefault();
     if (!offerAmount) {
       setOfferError('Please enter an offer amount');
@@ -48,17 +92,50 @@ export default function ConversationPage() {
       return;
     }
     setOfferError('');
-    console.log('Offer sent:', amount);
-    setOfferAmount('');
+
+    const parts = conversationId.split('-');
+    if (parts.length === 4 && parts[0] === 'conv' && user?.id) {
+      const userA = parseInt(parts[2]);
+      const userB = parseInt(parts[3]);
+      const listingId = parseInt(parts[1]);
+      const recipientId = userA === user.id ? userB : userA;
+      const messageText = `I'd like to offer $${amount.toFixed(2)} for this item.`;
+      try {
+        const newMsg = await messagesAPI.sendMessage(user.id, recipientId, listingId, messageText);
+        setMessages(prev => [...prev, newMsg]);
+        setOfferAmount('');
+        setOfferSuccess('Offer sent!');
+        setTimeout(() => setOfferSuccess(''), 3000);
+      } catch (err) {
+        setOfferError('Failed to send offer');
+        console.error(err);
+      }
+    }
   };
 
-  if (!conversation) {
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <main className="max-w-3xl mx-auto px-4 py-8">
+          <div className="flex items-center justify-center py-12">
+            <svg className="animate-spin h-8 w-8 text-brand-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (error || messages.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Navigation />
         <main className="max-w-3xl mx-auto px-4 py-8">
           <div className="bg-danger-50 border border-danger-200 rounded-lg p-6 text-center">
-            <p className="text-danger-600">Conversation not found</p>
+            <p className="text-danger-600">{error || 'Conversation not found'}</p>
             <Link to="/messages" className="text-brand-600 hover:underline mt-2 inline-block">Back to Messages</Link>
           </div>
         </main>
@@ -86,14 +163,15 @@ export default function ConversationPage() {
               </svg>
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900">{seller?.full_name}</h2>
-              <p className="text-sm text-gray-500">{listing?.title} • ${listing?.price.toFixed(2)}</p>
+              <h2 className="font-semibold text-gray-900">{otherUser?.full_name || 'User'}</h2>
+              <p className="text-sm text-gray-500">Conversation</p>
             </div>
           </div>
 
           <div className="p-4 space-y-4 min-h-96 max-h-96 overflow-y-auto">
-            {conversationMessages.map(msg => {
-              const isCurrentUser = msg.sender_id === 2;
+            {messages.map(msg => {
+              const isCurrentUser = msg.sender_id === user?.id;
+              const time = msg.created_at || msg.sent_at;
               return (
                 <div key={msg.id} className={`flex gap-3 ${isCurrentUser ? 'justify-end' : ''}`}>
                   {!isCurrentUser && (
@@ -107,7 +185,7 @@ export default function ConversationPage() {
                     <p className="text-sm">{msg.message_text}</p>
                     <div className="flex items-center justify-between mt-1">
                       <span className={`text-xs ${isCurrentUser ? 'text-brand-200' : 'text-gray-400'}`}>
-                        {new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {time ? new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                       </span>
                       {isCurrentUser && (
                         <span className="text-xs ml-2 text-brand-200">
@@ -172,6 +250,7 @@ export default function ConversationPage() {
             />
             <Button type="submit">Send Offer</Button>
           </form>
+          {offerSuccess && <p className="text-sm text-green-600 mt-2">{offerSuccess}</p>}
         </Card>
       </main>
     </div>
