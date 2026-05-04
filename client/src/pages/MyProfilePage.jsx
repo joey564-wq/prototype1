@@ -1,17 +1,33 @@
-import Navbar from '../components/Navbar.jsx';
+import Navigation from '../components/Navigation.jsx';
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { listingsAPI } from '../lib/api.js';
 import Card from '../components/Card.jsx';
 import Button from '../components/Button.jsx';
-import Input, { Textarea } from '../components/Input.jsx';
+import Input, { Textarea, Select } from '../components/Input.jsx';
 import Badge from '../components/Badge.jsx';
 
 export default function MyProfilePage() {
   const currentUserId = 1;
   const [myListings, setMyListings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState({ full_name: 'Jane Doe', email: 'jane.doe@example.com', bio: '' });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const [currentUser, setCurrentUser] = useState({ 
+    full_name: 'Jane Doe', 
+    email: 'jane.doe@example.com', 
+    bio: '',
+    graduation_year: '',
+    major: ''
+  });
+
+  const handleDelete = (listingId) => {
+    setShowDeleteConfirm(listingId);
+  };
+
+  const confirmDelete = () => {
+    console.log('Deleting listing:', showDeleteConfirm);
+    setShowDeleteConfirm(null);
+  };
 
   useEffect(() => {
     async function loadMyListings() {
@@ -30,7 +46,7 @@ export default function MyProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <Navigation />
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">My Profile</h1>
 
@@ -56,6 +72,21 @@ export default function MyProfilePage() {
                   defaultValue={currentUser.bio}
                   rows={3}
                 />
+                <Select
+                  label="Graduation Year"
+                  defaultValue={currentUser.graduation_year}
+                >
+                  <option value="">Select graduation year</option>
+                  {Array.from({ length: 7 }, (_, i) => {
+                    const year = new Date().getFullYear() + i;
+                    return <option key={year} value={year}>{year}</option>;
+                  })}
+                </Select>
+                <Input
+                  label="Major"
+                  defaultValue={currentUser.major}
+                  placeholder="e.g., Computer Science"
+                />
                 <Button className="w-full">Save Changes</Button>
               </form>
             </div>
@@ -74,18 +105,19 @@ export default function MyProfilePage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {myListings.map(listing => (
-                  <Link key={listing.id} to={`/listings/${listing.id}`} className="group">
-                    <Card hover className="overflow-hidden">
-                      <div className="h-40 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center group-hover:from-brand-50 group-hover:to-brand-100 transition-all">
-                        <svg className="w-12 h-12 text-gray-400 group-hover:text-brand-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                      </div>
-                      <div className="p-4">
-                        <div className="flex items-start justify-between mb-2">
-                          <h3 className="font-semibold text-gray-900 line-clamp-2 flex-1">{listing.title}</h3>
-                          <Badge 
-                            variant={listing.status === 'sold' ? 'danger' : 'success'} 
+                  <div key={listing.id} className="group relative">
+                    <Link to={`/listings/${listing.id}`} className="group">
+                      <Card hover className="overflow-hidden">
+                        <div className="h-40 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center group-hover:from-brand-50 group-hover:to-brand-100 transition-all">
+                          <svg className="w-12 h-12 text-gray-400 group-hover:text-brand-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <div className="p-4">
+                          <div className="flex items-start justify-between mb-2">
+                            <h3 className="font-semibold text-gray-900 line-clamp-2 flex-1">{listing.title}</h3>
+                            <Badge 
+                              variant={listing.status === 'sold' ? 'danger' : 'success'} 
                             size="sm"
                             className="ml-2 flex-shrink-0"
                           >
@@ -95,7 +127,16 @@ export default function MyProfilePage() {
                         <p className="text-xl font-bold text-brand-600">${listing.price?.toFixed(2)}</p>
                       </div>
                     </Card>
-                  </Link>
+                    </Link>
+                    <button
+                      onClick={(e) => { e.preventDefault(); handleDelete(listing.id); }}
+                      className="absolute top-2 right-2 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 z-10"
+                    >
+                      <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
@@ -113,6 +154,20 @@ export default function MyProfilePage() {
           </div>
         </div>
       </main>
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <Card className="p-6 max-w-sm w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Listing?</h3>
+            <p className="text-gray-600 mb-4">This action cannot be undone. Are you sure you want to delete this listing?</p>
+            <div className="flex gap-3">
+              <Button variant="secondary" onClick={() => setShowDeleteConfirm(null)} className="flex-1">Cancel</Button>
+              <Button variant="danger" onClick={confirmDelete} className="flex-1">Delete</Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

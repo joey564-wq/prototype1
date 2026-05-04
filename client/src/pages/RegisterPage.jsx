@@ -1,15 +1,17 @@
-import Navbar from '../components/Navbar.jsx';
-import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import Navigation from '../components/Navigation.jsx';
+import { Link, useState } from 'react';
 import Button from '../components/Button.jsx';
-import Input from '../components/Input.jsx';
+import Input, { Select } from '../components/Input.jsx';
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [graduationYear, setGraduationYear] = useState('');
+  const [major, setMajor] = useState('');
   const [errors, setErrors] = useState({});
+  const [showVerification, setShowVerification] = useState(false);
 
   const validate = () => {
     const newErrors = {};
@@ -23,6 +25,8 @@ export default function RegisterPage() {
     else if (password.length < 8) newErrors.password = 'Password must be at least 8 characters';
     if (!confirmPassword) newErrors.confirmPassword = 'Please confirm your password';
     else if (password !== confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
+    if (!graduationYear) newErrors.graduationYear = 'Graduation year is required';
+    if (!major) newErrors.major = 'Major is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -30,13 +34,36 @@ export default function RegisterPage() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validate()) {
-      console.log('Register submitted:', { fullName, email });
+      console.log('Register submitted:', { fullName, email, graduationYear, major });
+      setShowVerification(true);
     }
   };
 
+  if (showVerification) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <main className="max-w-md mx-auto px-4 py-12">
+          <div className="bg-white rounded-xl shadow-md p-8 text-center">
+            <div className="w-16 h-16 bg-brand-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Check Your Email</h1>
+            <p className="text-gray-500 mb-6">We've sent a verification link to <strong>{email}</strong>. Please check your Chico State email to verify your account.</p>
+            <Link to="/login">
+              <Button size="lg" className="w-full">Go to Login</Button>
+            </Link>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <Navigation />
       <main className="max-w-md mx-auto px-4 py-12">
         <div className="bg-white rounded-xl shadow-md p-8">
           <div className="text-center mb-8">
@@ -79,6 +106,27 @@ export default function RegisterPage() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               error={errors.confirmPassword}
+            />
+
+            <Select
+              label="Graduation Year"
+              value={graduationYear}
+              onChange={(e) => setGraduationYear(e.target.value)}
+              error={errors.graduationYear}
+            >
+              <option value="">Select graduation year</option>
+              {Array.from({ length: 7 }, (_, i) => {
+                const year = new Date().getFullYear() + i;
+                return <option key={year} value={year}>{year}</option>;
+              })}
+            </Select>
+
+            <Input
+              label="Major"
+              placeholder="e.g., Computer Science"
+              value={major}
+              onChange={(e) => setMajor(e.target.value)}
+              error={errors.major}
             />
 
             <Button type="submit" size="lg" className="w-full">Create Account</Button>

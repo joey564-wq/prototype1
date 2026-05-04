@@ -1,4 +1,4 @@
-import Navbar from '../components/Navbar.jsx';
+import Navigation from '../components/Navigation.jsx';
 import { Link } from 'react-router-dom';
 import { conversations, users, listings, messages } from '../lib/mockData.js';
 import Card from '../components/Card.jsx';
@@ -11,7 +11,7 @@ export default function MessagesPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <Navigation />
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Messages</h1>
 

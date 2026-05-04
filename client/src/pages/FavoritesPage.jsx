@@ -1,5 +1,6 @@
-import Navbar from '../components/Navbar.jsx';
+import Navigation from '../components/Navigation.jsx';
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import { favorites, listings, users } from '../lib/mockData.js';
 import Card from '../components/Card.jsx';
 import Badge from '../components/Badge.jsx';
@@ -7,12 +8,22 @@ import Button from '../components/Button.jsx';
 
 export default function FavoritesPage() {
   const currentUserId = 2;
+  const [showConfirm, setShowConfirm] = useState(null);
   const userFavorites = favorites.filter(f => f.user_id === currentUserId);
   const favoriteListings = userFavorites.map(f => listings.find(l => l.id === f.listing_id)).filter(Boolean);
 
+  const handleRemove = (listingId) => {
+    setShowConfirm(listingId);
+  };
+
+  const confirmRemove = () => {
+    console.log('Removing favorite:', showConfirm);
+    setShowConfirm(null);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <Navigation />
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Favorites</h1>
         <p className="text-gray-500 mb-6">{favoriteListings.length} items saved</p>
@@ -33,7 +44,7 @@ export default function FavoritesPage() {
             {favoriteListings.map(listing => {
               const seller = users.find(u => u.id === listing.seller_id);
               return (
-                <Link key={listing.id} to={`/listings/${listing.id}`} className="group">
+                <div key={listing.id} className="group relative">
                   <Card hover className="overflow-hidden">
                     <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center group-hover:from-brand-50 group-hover:to-brand-100 transition-all">
                       <svg className="w-16 h-16 text-gray-400 group-hover:text-brand-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -49,12 +60,34 @@ export default function FavoritesPage() {
                       </div>
                     </div>
                   </Card>
-                </Link>
+                  <button
+                    onClick={() => handleRemove(listing.id)}
+                    className="absolute top-2 right-2 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50"
+                  >
+                    <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
               );
             })}
           </div>
         )}
       </main>
+
+      {/* Confirmation Dialog */}
+      {showConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <Card className="p-6 max-w-sm w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Remove from Favorites?</h3>
+            <p className="text-gray-600 mb-4">This item will be removed from your favorites list.</p>
+            <div className="flex gap-3">
+              <Button variant="secondary" onClick={() => setShowConfirm(null)} className="flex-1">Cancel</Button>
+              <Button variant="danger" onClick={confirmRemove} className="flex-1">Remove</Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

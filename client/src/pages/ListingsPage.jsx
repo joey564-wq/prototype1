@@ -1,4 +1,4 @@
-import Navbar from '../components/Navbar.jsx';
+import Navigation from '../components/Navigation.jsx';
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { listingsAPI } from '../lib/api.js';
@@ -6,19 +6,88 @@ import Button from '../components/Button.jsx';
 import Badge from '../components/Badge.jsx';
 import Card from '../components/Card.jsx';
 import { Select } from '../components/Input.jsx';
+import ListingDetailModal from '../components/ListingDetailModal.jsx';
 
 export default function ListingsPage() {
   const [listings, setListings] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedListingId, setSelectedListingId] = useState(null);
   const [error, setError] = useState(null);
+  
+  // Input state (what user is typing/selecting)
+  const [searchInput, setSearchInput] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [selectedConditions, setSelectedConditions] = useState([]);
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [sortBy, setSortBy] = useState('newest');
+  
+  // Submitted state (what was last searched)
+  const [submittedFilters, setSubmittedFilters] = useState({
+    search: '',
+    categories: [],
+    conditions: [],
+    minPrice: '',
+    maxPrice: '',
+    sortBy: 'newest'
+  });
 
   useEffect(() => {
     async function loadData() {
       try {
         setLoading(true);
         const data = await listingsAPI.getAll();
-        setListings(data.listings || []);
+        let filteredListings = data.listings || [];
+        
+        // Apply submitted filters
+        if (submittedFilters.search) {
+          filteredListings = filteredListings.filter(l => 
+            l.title.toLowerCase().includes(submittedFilters.search.toLowerCase())
+          );
+        }
+        
+        if (submittedFilters.categories.length > 0) {
+          filteredListings = filteredListings.filter(l => 
+            submittedFilters.categories.includes(l.categories?.name)
+          );
+        }
+        
+        if (submittedFilters.conditions.length > 0) {
+          filteredListings = filteredListings.filter(l => 
+            submittedFilters.conditions.includes(l.condition)
+          );
+        }
+        
+        if (submittedFilters.minPrice) {
+          filteredListings = filteredListings.filter(l => 
+            l.price >= parseFloat(submittedFilters.minPrice)
+          );
+        }
+        
+        if (submittedFilters.maxPrice) {
+          filteredListings = filteredListings.filter(l => 
+            l.price <= parseFloat(submittedFilters.maxPrice)
+          );
+        }
+        
+        // Apply sorting
+        switch (submittedFilters.sortBy) {
+          case 'newest':
+            filteredListings.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            break;
+          case 'price_low':
+            filteredListings.sort((a, b) => a.price - b.price);
+            break;
+          case 'price_high':
+            filteredListings.sort((a, b) => b.price - a.price);
+            break;
+          case 'top_rated':
+            filteredListings.sort((a, b) => (b.users?.avg_rating || 0) - (a.users?.avg_rating || 0));
+            break;
+        }
+        
+        setListings(filteredList);
         const uniqueCategories = [...new Set(data.listings?.map(l => l.categories?.name).filter(Boolean))];
         setCategories(uniqueCategories);
       } catch (err) {
@@ -29,11 +98,51 @@ export default function ListingsPage() {
       }
     }
     loadData();
-  }, []);
+  }, [submittedFilters]);
+
+  const handleSearch = () => {
+    setSubmittedFilters({
+      search: searchInput,
+      categories: selectedCategories,
+      conditions: selectedConditions,
+      minPrice,
+      maxPrice,
+      sortBy
+    });
+  };
+
+  const handleClearFilters = () => {
+    setSearchInput('');
+    setSelectedCategories([]);
+    setSelectedConditions([]);
+    setMinPrice('');
+    setMaxPrice('');
+    setSortBy('newest');
+    setSubmittedFilters({
+      search: '',
+      categories: [],
+      conditions: [],
+      minPrice: '',
+      maxPrice: '',
+      sortBy: 'newest'
+    });
+  };
+
+  const toggleCategory = (cat) => {
+    setSelectedCategories(prev => 
+      prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+    );
+  };
+
+  const toggleCondition = (cond) => {
+    setSelectedConditions(prev => 
+      prev.includes(cond) ? prev.filter(c => c !== cond) : [...prev, cond]
+    );
+  };
 
   if (loading) return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <Navigation />
       <main className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex items-center justify-center py-12">
           <svg className="animate-spin h-8 w-8 text-brand-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -47,7 +156,7 @@ export default function ListingsPage() {
 
   if (error) return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <Navigation />
       <main className="max-w-6xl mx-auto px-4 py-8">
         <div className="bg-danger-50 border border-danger-200 rounded-lg p-6 text-center">
           <p className="text-danger-600">{error}</p>
@@ -58,7 +167,7 @@ export default function ListingsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <Navigation />
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -73,31 +182,99 @@ export default function ListingsPage() {
 
         {/* Filters */}
         <Card className="mb-6">
-          <div className="p-4 flex flex-wrap gap-3">
-            <Select className="w-40" label="">
-              <option>All Categories</option>
-              {categories.map((cat, idx) => (
-                <option key={idx}>{cat}</option>
-              ))}
-            </Select>
-            <Select className="w-32" label="">
-              <option>Any Condition</option>
-              <option>New</option>
-              <option>Like New</option>
-              <option>Good</option>
-              <option>Fair</option>
-              <option>Poor</option>
-            </Select>
-            <input 
-              type="number" 
-              placeholder="Min Price" 
-              className="px-3 py-2 border border-gray-300 rounded-lg w-24 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" 
-            />
-            <input 
-              type="number" 
-              placeholder="Max Price" 
-              className="px-3 py-2 border border-gray-300 rounded-lg w-24 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" 
-            />
+          <div className="p-4 space-y-4">
+            {/* Search Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+              <input
+                type="text"
+                placeholder="Search listings..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Categories Checkboxes */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Categories</label>
+              <div className="flex flex-wrap gap-2">
+                {categories.map((cat) => (
+                  <label key={cat} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedCategories.includes(cat)}
+                      onChange={() => toggleCategory(cat)}
+                      className="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                    />
+                    <span className="text-sm text-gray-700">{cat}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Condition Checkboxes */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Condition</label>
+              <div className="flex flex-wrap gap-2">
+                {['New', 'Like New', 'Good', 'Fair', 'Poor'].map((cond) => (
+                  <label key={cond} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedConditions.includes(cond.toLowerCase().replace(' ', '_'))}
+                      onChange={() => toggleCondition(cond.toLowerCase().replace(' ', '_'))}
+                      className="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                    />
+                    <span className="text-sm text-gray-700">{cond}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Price Range */}
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Min Price</label>
+                <input
+                  type="number"
+                  placeholder="0"
+                  value={minPrice}
+                  onChange={(e) => setMinPrice(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Max Price</label>
+                <input
+                  type="number"
+                  placeholder="Any"
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            {/* Sort */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+              <Select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full"
+              >
+                <option value="newest">Newest First</option>
+                <option value="price_low">Price: Low to High</option>
+                <option value="price_high">Price: High to Low</option>
+                <option value="top_rated">Top Rated</option>
+              </Select>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-2">
+              <Button onClick={handleSearch} className="flex-1">Search</Button>
+              <Button variant="secondary" onClick={handleClearFilters} className="flex-1">Clear Filters</Button>
+            </div>
           </div>
         </Card>
 
@@ -116,7 +293,7 @@ export default function ListingsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {listings.map(listing => (
-              <Link key={listing.id} to={`/listings/${listing.id}`} className="group">
+              <div key={listing.id} onClick={() => setSelectedListingId(listing.id)} className="cursor-pointer">
                 <Card hover className="overflow-hidden">
                   <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center group-hover:from-brand-50 group-hover:to-brand-100 transition-all relative">
                     <Badge 
@@ -138,11 +315,17 @@ export default function ListingsPage() {
                     </div>
                   </div>
                 </Card>
-              </Link>
+              </div>
             ))}
           </div>
         )}
       </main>
+      
+      <ListingDetailModal 
+        isOpen={!!selectedListingId}
+        onClose={() => setSelectedListingId(null)}
+        listingId={selectedListingId}
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import Navbar from '../components/Navbar.jsx';
+import Navigation from '../components/Navigation.jsx';
 import { Link, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { listingsAPI } from '../lib/api.js';
@@ -30,7 +30,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <Navigation />
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Profile Header */}
         <Card className="mb-8">
@@ -41,20 +41,58 @@ export default function ProfilePage() {
               </svg>
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{user.full_name}</h1>
-              <p className="text-gray-500">{user.email}</p>
-              <div className="flex items-center gap-2 mt-2">
-                <Badge variant="brand">Verified Student</Badge>
-                <span className="text-sm text-gray-600">4.8 ★ (12 reviews)</span>
+              <h2 className="text-xl font-bold text-gray-900">{user.full_name}</h2>
+              <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                <span>{user.major} • Class of {user.graduation_year}</span>
+                <span className="flex items-center gap-1">
+                  <svg className="w-4 h-4 text-success-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  Verified
+                </span>
+              </div>
+              <div className="flex items-center gap-1 mt-1">
+                <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+                <span className="text-sm font-medium text-gray-900">4.8</span>
+                <span className="text-sm text-gray-500">(12 reviews)</span>
               </div>
             </div>
           </div>
         </Card>
 
-        {/* Active Listings */}
-        <section className="mb-12">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Active Listings</h2>
-          {loading ? (
+        {/* Tabs */}
+        <div className="border-b border-gray-200 mb-6">
+          <nav className="flex gap-8">
+            <button
+              onClick={() => setActiveTab('listings')}
+              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'listings'
+                  ? 'border-brand-600 text-brand-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Listings ({userListings.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('reviews')}
+              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'reviews'
+                  ? 'border-brand-600 text-brand-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Reviews (12)
+            </button>
+          </nav>
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === 'listings' && (
+          <section>
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Active Listings</h2>
+            {loading ? (
             <div className="flex items-center justify-center py-12">
               <svg className="animate-spin h-8 w-8 text-brand-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -83,8 +121,9 @@ export default function ProfilePage() {
             </div>
           )}
         </section>
+        )}
 
-        {/* Reviews */}
+        {activeTab === 'reviews' && (
         <section>
           <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Reviews</h2>
           <div className="space-y-3">
@@ -104,6 +143,7 @@ export default function ProfilePage() {
             </Card>
           </div>
         </section>
+        )}
       </main>
     </div>
   );

@@ -1,4 +1,4 @@
-import Navbar from '../components/Navbar.jsx';
+import Navigation from '../components/Navigation.jsx';
 import { Link, useParams } from 'react-router-dom';
 import { useState } from 'react';
 import { conversations, users, listings, messages } from '../lib/mockData.js';
@@ -55,7 +55,7 @@ export default function ConversationPage() {
   if (!conversation) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
+        <Navigation />
         <main className="max-w-3xl mx-auto px-4 py-8">
           <div className="bg-danger-50 border border-danger-200 rounded-lg p-6 text-center">
             <p className="text-danger-600">Conversation not found</p>
@@ -68,7 +68,7 @@ export default function ConversationPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <Navigation />
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Link to="/messages" className="text-brand-600 hover:underline inline-flex items-center gap-1 mb-4">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -105,9 +105,16 @@ export default function ConversationPage() {
                   )}
                   <div className={`${isCurrentUser ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-900'} rounded-2xl px-4 py-3 max-w-xs`}>
                     <p className="text-sm">{msg.message_text}</p>
-                    <span className={`text-xs mt-1 block ${isCurrentUser ? 'text-brand-200' : 'text-gray-400'}`}>
-                      {new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className={`text-xs ${isCurrentUser ? 'text-brand-200' : 'text-gray-400'}`}>
+                        {new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      {isCurrentUser && (
+                        <span className="text-xs ml-2 text-brand-200">
+                          {msg.read_status ? '✓✓' : '✓'}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   {isCurrentUser && (
                     <div className="w-8 h-8 bg-brand-600 rounded-full flex items-center justify-center flex-shrink-0">
@@ -132,6 +139,20 @@ export default function ConversationPage() {
               />
               <Button type="submit">Send</Button>
             </form>
+            
+            {/* Quick Replies */}
+            <div className="flex flex-wrap gap-2 mt-3">
+              {['Is this still available?', 'Can you lower the price?', 'When can we meet?', 'I\'m interested', 'What\'s the condition?'].map((reply) => (
+                <button
+                  key={reply}
+                  type="button"
+                  onClick={() => setMessageText(reply)}
+                  className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-700 transition-colors"
+                >
+                  {reply}
+                </button>
+              ))}
+            </div>
           </div>
         </Card>
 

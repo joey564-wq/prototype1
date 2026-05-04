@@ -1,10 +1,13 @@
-import Navbar from '../components/Navbar.jsx';
-import { Link } from 'react-router-dom';
+import Navigation from '../components/Navigation.jsx';
+import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import Button from '../components/Button.jsx';
 import Input from '../components/Input.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
 
 export default function LoginPage() {
+  const { login } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
@@ -22,13 +25,20 @@ export default function LoginPage() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validate()) {
-      console.log('Login submitted:', { email, password });
+      login({ 
+        id: 1, 
+        full_name: 'Jane Doe', 
+        email, 
+        graduation_year: '2026',
+        major: 'Computer Science'
+      });
+      navigate('/profile/me');
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <Navigation />
       <main className="max-w-md mx-auto px-4 py-12">
         <div className="bg-white rounded-xl shadow-md p-8">
           <div className="text-center mb-8">
