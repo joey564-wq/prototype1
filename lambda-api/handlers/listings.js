@@ -1,8 +1,14 @@
+const WebSocket = require('ws');
 const { createClient } = require('@supabase/supabase-js');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
+  process.env.SUPABASE_ANON_KEY,
+  {
+    realtime: {
+      transport: WebSocket,
+    },
+  }
 );
 
 const headers = {
@@ -13,8 +19,7 @@ const headers = {
 module.exports.getAll = async (event) => {
   const { data, error } = await supabase
     .from('listings')
-    .select('*, users(name, major, graduation_year), categories(name)')
-    .eq('status', 'active')
+    .select('*, users(*), categories(*)')
     .order('created_at', { ascending: false });
 
   if (error) return { statusCode: 500, headers, body: JSON.stringify({ error }) };
@@ -25,7 +30,7 @@ module.exports.getById = async (event) => {
   const { id } = event.pathParameters;
   const { data, error } = await supabase
     .from('listings')
-    .select('*, users(name, major, graduation_year, rating), categories(name)')
+    .select('*, users(*), categories(*)')
     .eq('id', id)
     .single();
 
